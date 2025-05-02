@@ -1,0 +1,78 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Welcome, {{ username || 'User' }}</h1>
+    <p class="subtitle">Manage your video projects</p>
+  </div>
+  
+  <div class="action-buttons">
+    <button mat-raised-button color="primary" (click)="createNewProject()">
+      <mat-icon>add</mat-icon> New Video Project
+    </button>
+    
+    <button mat-raised-button color="warn" (click)="clearHistory()" [disabled]="mergedVideos.length === 0">
+      <mat-icon>delete_sweep</mat-icon> Clear History
+    </button>
+  </div>
+  
+  <div class="videos-container">
+    @if (isLoading) {
+      <div class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading your video history...</p>
+      </div>
+    } @else if (mergedVideos.length === 0) {
+      <mat-card class="empty-state-card">
+        <mat-card-content>
+          <mat-icon class="empty-icon">video_library</mat-icon>
+          <h2>No video projects yet</h2>
+          <p>Start creating your first video project by clicking the "New Video Project" button above.</p>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <table mat-table [dataSource]="mergedVideos" class="videos-table">
+        <!-- Title Column -->
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef>Title</th>
+          <td mat-cell *matCellDef="let video">{{ video.title }}</td>
+        </ng-container>
+        
+        <!-- Duration Column -->
+        <ng-container matColumnDef="duration">
+          <th mat-header-cell *matHeaderCellDef>Duration</th>
+          <td mat-cell *matCellDef="let video">{{ formatDuration(video.duration) }}</td>
+        </ng-container>
+        
+        <!-- Created Date Column -->
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let video">{{ video.createdAt | date:'medium' }}</td>
+        </ng-container>
+        
+        <!-- Clips Count Column -->
+        <ng-container matColumnDef="clips">
+          <th mat-header-cell *matHeaderCellDef>Clips</th>
+          <td mat-cell *matCellDef="let video">{{ video.clips.length }}</td>
+        </ng-container>
+        
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let video">
+            <button mat-icon-button color="primary" (click)="viewVideo(video)" matTooltip="View Video">
+              <mat-icon>play_circle_filled</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" (click)="downloadVideo(video)" *ngIf="video.outputUrl" matTooltip="Download Video">
+              <mat-icon>download</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteVideo(video.id)" matTooltip="Delete Video">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+        
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    }
+  </div>
+</div>

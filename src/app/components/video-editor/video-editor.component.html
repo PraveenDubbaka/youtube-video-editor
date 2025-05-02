@@ -1,0 +1,134 @@
+<div class="video-editor-container">
+  <div class="editor-content">
+    <h1>Video Editor</h1>
+    
+    <div class="actions">
+      <button mat-raised-button color="primary" (click)="navigateBack()">
+        Back to Dashboard
+      </button>
+    </div>
+    
+    <!-- Video Display Area - Shows when a video is loaded -->
+    <div *ngIf="isVideoLoaded && currentVideo" class="video-display-area">
+      <h2>{{ currentVideo?.title }}</h2>
+      <div class="video-player">
+        <!-- Use a div with ID that the YouTube API can target instead of an iframe -->
+        <div id="youtube-player"></div>
+      </div>
+      
+      <div class="editing-tools">
+        <h3>Editing Tools</h3>
+        <div class="tool-buttons">
+          <button mat-raised-button color="accent" (click)="debugCutClip()">
+            <mat-icon>content_cut</mat-icon> Cut Clip
+          </button>
+          <button mat-raised-button color="accent" (click)="debugAddMarker()">
+            <mat-icon>bookmark</mat-icon> Add Marker
+          </button>
+          <button mat-raised-button color="accent" (click)="debugAddEffect()">
+            <mat-icon>filter</mat-icon> Add Effect
+          </button>
+          
+          <!-- Add Merge and Save buttons directly to the main toolbar -->
+          <button mat-raised-button color="primary" [disabled]="clips.length < 1" (click)="mergeClips()">
+            <mat-icon>merge_type</mat-icon> Merge Clips
+          </button>
+          <button mat-raised-button color="warn" [disabled]="clips.length < 1" (click)="saveVideo()">
+            <mat-icon>save</mat-icon> Save Video
+          </button>
+          
+          <!-- Non-dialog direct action as fallback -->
+          <button mat-raised-button color="warn" (click)="directAddMarker()">
+            Direct Add Marker
+          </button>
+        </div>
+      </div>
+      
+      <!-- Timestamps and Clips Display -->
+      <div *ngIf="timestamps.length > 0 || clips.length > 0" class="editor-section">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Project Elements</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <!-- Timestamps List -->
+            <div *ngIf="timestamps.length > 0" class="section-container">
+              <h4>Markers</h4>
+              <mat-list>
+                <mat-list-item *ngFor="let marker of timestamps">
+                  <mat-icon matListItemIcon>bookmark</mat-icon>
+                  <div matListItemTitle>{{marker.label}}</div>
+                  <div matListItemLine>Time: {{formatTime(marker.time)}}</div>
+                  <button mat-icon-button (click)="removeMarker(marker.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </mat-list-item>
+              </mat-list>
+            </div>
+            
+            <!-- Clips List -->
+            <div *ngIf="clips.length > 0" class="section-container">
+              <h4>Clips</h4>
+              <mat-list>
+                <mat-list-item *ngFor="let clip of clips">
+                  <mat-icon matListItemIcon>content_cut</mat-icon>
+                  <div matListItemTitle>{{clip.title}}</div>
+                  <div matListItemLine>{{formatTime(clip.startTime)}} - {{formatTime(clip.endTime)}}</div>
+                  <button mat-icon-button (click)="removeClip(clip.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </mat-list-item>
+              </mat-list>
+            </div>
+            
+            <!-- Merge and Save Video Buttons - Moved outside of clips div but still in Project Elements -->
+            <div class="project-actions">
+              <button mat-raised-button color="primary" [disabled]="clips.length < 1" (click)="mergeClips()">
+                <mat-icon>merge_type</mat-icon> Merge Clips
+              </button>
+              <button mat-raised-button color="accent" [disabled]="clips.length < 1" (click)="saveVideo()">
+                <mat-icon>save</mat-icon> Save Video
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+    
+    <!-- Load Video Form - Shows when no video is loaded -->
+    <mat-card *ngIf="!isVideoLoaded" class="form-card">
+      <mat-card-header>
+        <mat-card-title>Create New Project</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="videoForm" (ngSubmit)="loadVideo()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>YouTube URL</mat-label>
+            <input matInput formControlName="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
+            <mat-icon matPrefix>link</mat-icon>
+            <mat-error *ngIf="videoForm.get('youtubeUrl')?.hasError('required')">
+              YouTube URL is required
+            </mat-error>
+            <mat-error *ngIf="videoForm.get('youtubeUrl')?.hasError('pattern')">
+              Please enter a valid YouTube URL
+            </mat-error>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Project Title</mat-label>
+            <input matInput formControlName="videoTitle" placeholder="My YouTube Project">
+            <mat-icon matPrefix>title</mat-icon>
+            <mat-error *ngIf="videoForm.get('videoTitle')?.hasError('required')">
+              Project title is required
+            </mat-error>
+          </mat-form-field>
+          
+          <button mat-raised-button color="primary" type="submit" [disabled]="videoForm.invalid || isLoading">
+            <span *ngIf="!isLoading">Load Video</span>
+            <span *ngIf="isLoading">Loading...</span>
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
