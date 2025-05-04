@@ -140,18 +140,89 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private loadYoutubeApi(): void {
     console.log('Loading YouTube API');
+    
+    // Check if we're trying to load the API multiple times
+    if (document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      console.log('YouTube API script is already in the document');
+      // If the script exists but YT object is not defined, we have a race condition
+      // Set a timer to keep checking for YT and initialize player when it becomes available
+      this.waitForYouTubeApi();
+      return;
+    }
+    
+    // Create and append the YouTube API script
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
+    tag.id = 'youtube-api-script';
+    tag.onload = () => {
+      console.log('YouTube API script loaded successfully via onload event');
+    };
+    tag.onerror = (error) => {
+      console.error('Error loading YouTube API script:', error);
+      // Try an alternative approach - load directly from iframe embed
+      this.fallbackLoadYouTubeApi();
+    };
+    
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
     
     // Set up callback for when API is ready
-    (window as any).onYouTubeIframeAPIReady = () => {
-      console.log('YouTube API is ready');
+    window.onYouTubeIframeAPIReady = () => {
+      console.log('YouTube API is ready - onYouTubeIframeAPIReady called');
       if (this.isVideoLoaded && this.currentVideo) {
         this.initializeYoutubePlayer();
       }
     };
+    
+    // Set a timeout to verify the API loaded correctly
+    this.waitForYouTubeApi();
+  }
+  
+  /**
+   * Wait for the YouTube API to become available
+   */
+  private waitForYouTubeApi(attempts = 0, maxAttempts = 10): void {
+    if (window.YT && typeof window.YT.Player === 'function') {
+      console.log('YouTube API is available - YT object found in window');
+      if (this.isVideoLoaded && this.currentVideo) {
+        this.initializeYoutubePlayer();
+      }
+      return;
+    }
+    
+    if (attempts >= maxAttempts) {
+      console.error('YouTube API failed to load after multiple attempts');
+      // Try an alternative approach
+      this.fallbackLoadYouTubeApi();
+      return;
+    }
+    
+    console.log(`Waiting for YouTube API to become available (attempt ${attempts + 1}/${maxAttempts})`);
+    setTimeout(() => {
+      this.waitForYouTubeApi(attempts + 1, maxAttempts);
+    }, 500);
+  }
+  
+  /**
+   * Alternative method to load YouTube player when API fails
+   */
+  private fallbackLoadYouTubeApi(): void {
+    console.log('Using fallback method to load YouTube API');
+    
+    if (!this.currentVideo?.youtubeId) {
+      console.error('Cannot use fallback method - no YouTube ID available');
+      return;
+    }
+    
+    // Create a simple fallback player using iframe
+    const playerElement = document.getElementById('youtube-player');
+    if (!playerElement) {
+      console.error('YouTube player element not found for fallback method');
+      return;
+    }
+    
+    // Direct iframe approach - more compatible
+    this.createFallbackPlayer();
   }
 
   /**
@@ -199,16 +270,25 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       console.log('Creating YouTube player with video ID:', this.currentVideo?.youtubeId);
       
+      // Set explicit dimensions for the player element before initialization
+      playerElement.style.width = '100%';
+      playerElement.style.height = '100%';
+      playerElement.style.minHeight = '360px';
+      
+      // Create a new player
       this.youtubePlayer = new (window as any).YT.Player('youtube-player', {
         videoId: this.currentVideo?.youtubeId,
-        height: '360',
-        width: '640',
+        height: '100%',
+        width: '100%',
         playerVars: {
           'playsinline': 1,
-          'autoplay': 0,
+          'autoplay': 1, // Auto-play the video
           'controls': 1,
           'rel': 0,
-          'origin': window.location.origin
+          'origin': window.location.origin,
+          'enablejsapi': 1,
+          'modestbranding': 1, // Minimal YouTube branding
+          'iv_load_policy': 3 // Hide video annotations
         },
         events: {
           'onReady': this.onPlayerReady.bind(this),
@@ -216,12 +296,66 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
           'onError': this.onPlayerError.bind(this)
         }
       });
+      
       console.log('YouTube player initialized');
+      
+      // Add a fallback check to verify player was created
+      setTimeout(() => {
+        if (!this.youtubePlayer || !this.youtubePlayer.getIframe) {
+          console.error('Player failed to initialize properly');
+          // Try an alternative approach using iframe directly
+          this.createFallbackPlayer();
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error('Error initializing YouTube player:', error);
-      this.snackBar.open('Error loading video player. Please refresh the page and try again.', 'Close', {
-        duration: 5000
+      this.snackBar.open('Error loading video player. Trying alternative method...', 'Close', {
+        duration: 3000
       });
+      
+      // Try fallback method if the standard method fails
+      this.createFallbackPlayer();
+    }
+  }
+  
+  /**
+   * Creates a fallback player by directly embedding a YouTube iframe
+   * This is used when the YouTube API method fails
+   */
+  private createFallbackPlayer(): void {
+    if (!this.currentVideo?.youtubeId) return;
+    
+    try {
+      console.log('Using fallback player creation method');
+      const playerElement = document.getElementById('youtube-player');
+      if (!playerElement) return;
+      
+      // Create the iframe directly
+      const iframe = document.createElement('iframe');
+      iframe.width = '100%';
+      iframe.height = '100%';
+      iframe.src = `https://www.youtube.com/embed/${this.currentVideo.youtubeId}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
+      iframe.frameBorder = '0';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      
+      // Clear container and append iframe
+      playerElement.innerHTML = '';
+      playerElement.appendChild(iframe);
+      
+      // Set a reference to use later, even though it won't have full API capabilities
+      this.youtubePlayer = { 
+        iframe: iframe,
+        getCurrentTime: () => 0, // fallback method
+        getIframe: () => iframe
+      };
+      
+      this.snackBar.open('Video loaded using alternative method', 'Close', {
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Fallback player creation failed:', error);
     }
   }
 

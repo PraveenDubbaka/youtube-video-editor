@@ -47,7 +47,30 @@ h1 {
   margin-bottom: 20px;
 }
 
+/* Style for the iframe player */
 .video-player iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+/* Style for the YouTube player div - this is crucial for the YouTube API to work properly */
+.video-player #youtube-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  background-color: #000; /* Black background while loading */
+  min-height: 360px; /* Ensure minimum height */
+}
+
+/* Fix for YouTube player in iOS devices */
+.video-player iframe[id^="youtube-player"] {
   position: absolute;
   top: 0;
   left: 0;
