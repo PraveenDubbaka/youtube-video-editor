@@ -164,39 +164,65 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     
-    // Create YouTube player after a short delay to ensure DOM is ready
-    setTimeout(() => {
-      const playerElement = document.getElementById('youtube-player');
-      if (!playerElement) {
-        console.warn('YouTube player element not found in DOM');
-        return;
-      }
+    // First, check if the player element exists
+    const playerElement = document.getElementById('youtube-player');
+    if (!playerElement) {
+      console.warn('YouTube player element not found in DOM');
       
-      try {
-        this.youtubePlayer = new (window as any).YT.Player('youtube-player', {
-          videoId: this.currentVideo?.youtubeId,
-          height: '360',
-          width: '640',
-          playerVars: {
-            'playsinline': 1,
-            'autoplay': 0,
-            'controls': 1,
-            'rel': 0
-          },
-          events: {
-            'onReady': this.onPlayerReady.bind(this),
-            'onStateChange': this.onPlayerStateChange.bind(this),
-            'onError': this.onPlayerError.bind(this)
-          }
-        });
-        console.log('YouTube player initialized');
-      } catch (error) {
-        console.error('Error initializing YouTube player:', error);
-        this.snackBar.open('Error loading video player. Please refresh the page and try again.', 'Close', {
-          duration: 5000
-        });
-      }
-    }, 300);
+      // Wait for the DOM to be ready and try again
+      setTimeout(() => {
+        const retryElement = document.getElementById('youtube-player');
+        if (!retryElement) {
+          console.error('YouTube player element still not found after retry');
+          this.snackBar.open('Error loading video player. Please refresh and try again.', 'Close', {
+            duration: 5000
+          });
+          return;
+        }
+        
+        this.createYouTubePlayer(retryElement);
+      }, 1000);
+      return;
+    }
+    
+    // If player element exists, create the player
+    this.createYouTubePlayer(playerElement);
+  }
+  
+  /**
+   * Creates the YouTube player instance
+   */
+  private createYouTubePlayer(playerElement: HTMLElement): void {
+    // Clear any existing content in the player element
+    playerElement.innerHTML = '';
+    
+    try {
+      console.log('Creating YouTube player with video ID:', this.currentVideo?.youtubeId);
+      
+      this.youtubePlayer = new (window as any).YT.Player('youtube-player', {
+        videoId: this.currentVideo?.youtubeId,
+        height: '360',
+        width: '640',
+        playerVars: {
+          'playsinline': 1,
+          'autoplay': 0,
+          'controls': 1,
+          'rel': 0,
+          'origin': window.location.origin
+        },
+        events: {
+          'onReady': this.onPlayerReady.bind(this),
+          'onStateChange': this.onPlayerStateChange.bind(this),
+          'onError': this.onPlayerError.bind(this)
+        }
+      });
+      console.log('YouTube player initialized');
+    } catch (error) {
+      console.error('Error initializing YouTube player:', error);
+      this.snackBar.open('Error loading video player. Please refresh the page and try again.', 'Close', {
+        duration: 5000
+      });
+    }
   }
 
   /**
@@ -293,6 +319,8 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       
       if (youtubeId) {
         console.log(`Loading YouTube video: ${youtubeId} with title: ${videoTitle}`);
+        
+        // Load the video in the service
         this.videoService.loadYouTubeVideo(youtubeId, videoTitle);
         
         // Show success message
@@ -302,7 +330,19 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
           verticalPosition: 'bottom'
         });
         
-        this.isLoading = false;
+        // Make sure we give the UI time to update before initializing the player
+        setTimeout(() => {
+          // Ensure we have the YouTube API loaded
+          if (!window.YT) {
+            this.loadYoutubeApi();
+          } else {
+            // If API is already loaded, give the DOM time to update before initializing
+            setTimeout(() => {
+              this.initializeYoutubePlayer();
+            }, 500);
+          }
+          this.isLoading = false;
+        }, 300);
       } else {
         console.error('Could not extract valid YouTube ID from URL');
         // Show error message
