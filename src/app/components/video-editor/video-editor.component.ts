@@ -272,13 +272,13 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       
       // Set explicit dimensions for the player element before initialization
       playerElement.style.width = '100%';
-      playerElement.style.height = '100%';
-      playerElement.style.minHeight = '360px';
+      playerElement.style.height = '450px';
+      playerElement.style.minHeight = '450px';
       
       // Create a new player
       this.youtubePlayer = new (window as any).YT.Player('youtube-player', {
         videoId: this.currentVideo?.youtubeId,
-        height: '100%',
+        height: '450px',
         width: '100%',
         playerVars: {
           'playsinline': 1,
@@ -331,10 +331,15 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       const playerElement = document.getElementById('youtube-player');
       if (!playerElement) return;
       
+      // Set explicit dimensions for the player element before adding iframe
+      playerElement.style.width = '100%';
+      playerElement.style.height = '450px';
+      playerElement.style.minHeight = '450px';
+      
       // Create the iframe directly
       const iframe = document.createElement('iframe');
       iframe.width = '100%';
-      iframe.height = '100%';
+      iframe.height = '450px';
       iframe.src = `https://www.youtube.com/embed/${this.currentVideo.youtubeId}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
       iframe.frameBorder = '0';
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
