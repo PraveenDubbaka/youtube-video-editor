@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:youtube-editor": "node dist/youtube-editor/server/server.mjs",
-    "deploy": "ng build --configuration production --base-href=\"/youtube-video-editor/\" && npx angular-cli-ghpages --dir=dist/youtube-editor/browser"
+    "deploy": "ng build --configuration production --base-href=\"/youtube-video-editor/\" && npx angular-cli-ghpages --dir=dist/youtube-editor/browser",
+    "vercel-build": "ng build --configuration production"
   },
   "private": true,
   "dependencies": {
