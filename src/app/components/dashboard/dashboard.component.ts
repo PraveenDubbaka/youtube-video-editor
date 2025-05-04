@@ -41,13 +41,8 @@ export class DashboardComponent implements OnInit {
   createNewProject(): void {
     console.log('Creating new project - navigating to editor');
     
-    // Force a page reload with the editor route
-    window.location.href = '/editor';
-    
-    // Alternative approach - try this if the above doesn't work
-    // setTimeout(() => {
-    //   this.router.navigate(['/editor']);
-    // }, 100);
+    // Use Angular Router instead of direct URL manipulation
+    this.router.navigate(['/editor']);
   }
 
   viewVideo(video: MergedVideo): void {
