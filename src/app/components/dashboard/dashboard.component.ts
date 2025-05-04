@@ -41,8 +41,22 @@ export class DashboardComponent implements OnInit {
   createNewProject(): void {
     console.log('Creating new project - navigating to editor');
     
-    // Use Angular Router instead of direct URL manipulation
-    this.router.navigate(['/editor']);
+    // Ensure the user is still authenticated before navigation
+    if (this.authService.isAuthenticated()) {
+      // Use Angular Router instead of direct URL manipulation
+      this.router.navigate(['/editor']).then(success => {
+        if (!success) {
+          console.error('Navigation to editor failed');
+          // If navigation fails, try an alternative approach
+          setTimeout(() => {
+            this.router.navigateByUrl('/editor');
+          }, 100);
+        }
+      });
+    } else {
+      console.warn('User not authenticated, redirecting to login');
+      this.router.navigate(['/login']);
+    }
   }
 
   viewVideo(video: MergedVideo): void {
