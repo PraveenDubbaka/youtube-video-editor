@@ -113,3 +113,36 @@ h3 {
 .project-actions button {
   min-width: 120px;
 }
+
+/* Preview styles */
+.preview-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  color: #1565c0;
+  font-weight: 500;
+
+  mat-icon {
+    color: #1565c0;
+  }
+
+  .preview-time {
+    margin-left: auto;
+    font-family: monospace;
+    font-size: 0.9em;
+  }
+
+  .preview-stop-btn {
+    color: #d32f2f;
+  }
+}
+
+mat-list-item.previewing {
+  background-color: #e3f2fd;
+  border-left: 3px solid #1565c0;
+}

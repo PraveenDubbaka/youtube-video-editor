@@ -12,6 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatListModule } from '@angular/material/list';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Video, VideoClip } from '../../models/video.model';
 import { TimestampMarker } from '../../models/timestamp.model';
 import { Subscription } from 'rxjs';
@@ -47,6 +48,7 @@ declare global {
     MatDialogModule,
     MatListModule,
     MatSelectModule,
+    MatTooltipModule,
     ClipDialogComponent,
     EffectDialogComponent
   ]
@@ -65,6 +67,12 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   clips: VideoClip[] = [];
   currentTime: number = 0;
   console = console; // Expose console to the template
+
+  // Preview state
+  previewingClipId: string | null = null;
+  previewCurrentTime: number = 0;
+  previewEndTime: number = 0;
+  private previewInterval: ReturnType<typeof setInterval> | null = null;
 
   // YouTube Player reference
   private youtubePlayer: any = null;
@@ -437,6 +445,8 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.effectsSubscription) {
       this.effectsSubscription.unsubscribe();
     }
+
+    this.clearPreviewInterval();
   }
 
   navigateBack(): void {
@@ -647,6 +657,68 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   
+  // Preview a clip by seeking to start time and playing to end time
+  previewClip(clip: VideoClip): void {
+    console.log('Preview clip:', clip.title, 'from', clip.startTime, 'to', clip.endTime);
+
+    if (!this.youtubePlayer || typeof this.youtubePlayer.seekTo !== 'function') {
+      this.snackBar.open('Player not available for preview. Please wait for the video to load.', 'Close', {
+        duration: 3000
+      });
+      return;
+    }
+
+    // Stop any existing preview
+    this.clearPreviewInterval();
+
+    this.previewingClipId = clip.id;
+    this.previewCurrentTime = clip.startTime;
+    this.previewEndTime = clip.endTime;
+
+    // Seek to start time and play
+    this.youtubePlayer.seekTo(clip.startTime, true);
+    this.youtubePlayer.playVideo();
+
+    // Monitor playback and stop at end time
+    this.previewInterval = setInterval(() => {
+      if (this.youtubePlayer && typeof this.youtubePlayer.getCurrentTime === 'function') {
+        const currentTime = this.youtubePlayer.getCurrentTime();
+        this.previewCurrentTime = currentTime;
+
+        if (currentTime >= clip.endTime) {
+          this.stopPreview();
+          this.snackBar.open('Clip preview finished', 'Close', { duration: 2000 });
+        }
+      }
+    }, 250);
+  }
+
+  // Stop preview playback
+  stopPreview(): void {
+    console.log('Stopping preview');
+    this.clearPreviewInterval();
+    this.previewingClipId = null;
+    this.previewCurrentTime = 0;
+    this.previewEndTime = 0;
+
+    if (this.youtubePlayer && typeof this.youtubePlayer.pauseVideo === 'function') {
+      this.youtubePlayer.pauseVideo();
+    }
+  }
+
+  // Get the title of the clip being previewed
+  getPreviewingClipTitle(): string {
+    const clip = this.clips.find(c => c.id === this.previewingClipId);
+    return clip ? clip.title : '';
+  }
+
+  private clearPreviewInterval(): void {
+    if (this.previewInterval) {
+      clearInterval(this.previewInterval);
+      this.previewInterval = null;
+    }
+  }
+
   // Remove a clip by ID
   removeClip(clipId: string): void {
     this.videoService.removeClip(clipId);

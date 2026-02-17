@@ -11,6 +11,15 @@
     <!-- Video Display Area - Shows when a video is loaded -->
     <div *ngIf="isVideoLoaded && currentVideo" class="video-display-area">
       <h2>{{ currentVideo?.title }}</h2>
+      <!-- Preview Banner -->
+      <div *ngIf="previewingClipId" class="preview-banner">
+        <mat-icon>play_circle</mat-icon>
+        <span>Previewing: {{ getPreviewingClipTitle() }}</span>
+        <span class="preview-time">{{ formatTime(previewCurrentTime) }} / {{ formatTime(previewEndTime) }}</span>
+        <button mat-icon-button (click)="stopPreview()" class="preview-stop-btn">
+          <mat-icon>stop</mat-icon>
+        </button>
+      </div>
       <div class="video-player">
         <!-- Use a div with ID that the YouTube API can target instead of an iframe -->
         <div id="youtube-player"></div>
@@ -70,10 +79,16 @@
             <div *ngIf="clips.length > 0" class="section-container">
               <h4>Clips</h4>
               <mat-list>
-                <mat-list-item *ngFor="let clip of clips">
+                <mat-list-item *ngFor="let clip of clips" [class.previewing]="previewingClipId === clip.id">
                   <mat-icon matListItemIcon>content_cut</mat-icon>
                   <div matListItemTitle>{{clip.title}}</div>
                   <div matListItemLine>{{formatTime(clip.startTime)}} - {{formatTime(clip.endTime)}}</div>
+                  <button mat-icon-button (click)="previewClip(clip)" *ngIf="previewingClipId !== clip.id" matTooltip="Preview Clip">
+                    <mat-icon>play_circle_outline</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="stopPreview()" *ngIf="previewingClipId === clip.id" matTooltip="Stop Preview">
+                    <mat-icon>stop_circle</mat-icon>
+                  </button>
                   <button mat-icon-button (click)="removeClip(clip.id)">
                     <mat-icon>delete</mat-icon>
                   </button>
