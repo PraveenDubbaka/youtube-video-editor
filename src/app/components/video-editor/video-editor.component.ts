@@ -681,6 +681,7 @@ export class VideoEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Monitor playback and stop at end time
     this.previewInterval = setInterval(() => {
+      if (!this.previewingClipId) return;
       if (this.youtubePlayer && typeof this.youtubePlayer.getCurrentTime === 'function') {
         const currentTime = this.youtubePlayer.getCurrentTime();
         this.previewCurrentTime = currentTime;
